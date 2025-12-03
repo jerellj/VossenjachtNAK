@@ -113,6 +113,18 @@
       cursor: pointer;
       text-decoration: underline;
     }
+    .btn-secondary {
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.9);
+      color: var(--muted);
+      font-size: 0.78rem;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .btn-secondary:active {
+      transform: translateY(1px);
+    }
     .hint {
       font-size: 0.8rem;
       color: var(--muted);
@@ -293,6 +305,12 @@
       text-align: center;
       display: none;
     }
+    .admin-task-details {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+      padding-left: 4px;
+    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -324,7 +342,7 @@
           Tip: gebruik één telefoon per team. De app onthoudt jullie teamnaam.
         </div>
         <div class="hint" style="margin-top:10px;">
-          Game master? 
+          Game master?
           <button id="adminToggleBtn" class="btn-link">Open game master-paneel</button>
         </div>
       </div>
@@ -379,7 +397,7 @@
       <section id="adminPanel" class="card" style="margin-top:10px; display:none;">
         <div class="section-label">Game master</div>
         <p class="hint">
-          Hier kun je teams verwijderen of alles in één keer resetten. Gebruik dit alleen als spelleider.
+          Hier kun je teams verwijderen of alles in één keer resetten, en de opdrachten per team bekijken.
         </p>
         <div id="adminTeamsList" class="venue-list"></div>
         <button id="adminDeleteAllBtn" class="btn-primary" style="width:100%; margin-top:8px;">
@@ -409,7 +427,7 @@
 
     const RESET_TIME_HOUR = 5;
     const RESET_TIME_MINUTE = 55;
-    const ADMIN_CODE = "NAK2025"; // pas deze code aan voor je event
+    const ADMIN_CODE = "NAK2025"; // <- hier kun je je eigen game master code invullen
 
     // ====== Basisdata: kroegen & opdrachten ======
     const BASE_VENUES = [
@@ -482,12 +500,17 @@
     let remainingSeconds = 0;
     let currentTeamName = null;
     let currentVenueId = null;
+
     let teamsState = {};
-    let teamConfig = null; // { order: [venueIds], tasks: { venueId: {hasTask, taskTitle, taskText} } }
+    let teamConfig = null;         // config voor huidig team
+    let teamConfigsState = {};     // ALLE teamConfigs (voor game master)
     let myVisited = {};
+
     let subscribedTeams = false;
     let subscribedConnection = false;
+    let subscribedConfigs = false;
     let isAdmin = false;
+
     const venueButtons = {};
     const venueTags = {};
 
@@ -525,11 +548,8 @@
         const snap = await get(resetRef);
         const last = snap.exists() ? snap.val() : null;
 
-        if (last === today) {
-          return; // vandaag al gereset
-        }
+        if (last === today) return;
 
-        // reset alle teams & configs
         await set(ref(db, "teams"), null);
         await set(ref(db, "teamConfigs"), null);
         await set(resetRef, today);
@@ -642,7 +662,7 @@
       return BASE_VENUES.map(v => v.id);
     }
 
-    // ====== UI opbouw: lijst kroegen ======
+    // ====== UI: kroegenlijst ======
     function renderVenueList() {
       venueListEl.innerHTML = "";
       const orderedIds = getOrderedVenueIds();
@@ -760,6 +780,7 @@
       renderVenueList();
       ensureSubscribeToTeams();
       ensureSubscribeToConnection();
+      ensureSubscribeToTeamConfigs();
       adminPanel.style.display = "block";
     });
 
@@ -798,6 +819,7 @@
 
     function updateAdminTeamsList(entries) {
       if (!isAdmin || !adminTeamsList) return;
+
       adminTeamsList.innerHTML = "";
       if (entries.length === 0) {
         const info = document.createElement("div");
@@ -806,7 +828,13 @@
         adminTeamsList.appendChild(info);
         return;
       }
-      entries.forEach(t => {
+
+      entries.forEach((t) => {
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "flex";
+        wrapper.style.flexDirection = "column";
+        wrapper.style.gap = "4px";
+
         const row = document.createElement("div");
         row.className = "venue-btn";
 
@@ -824,6 +852,12 @@
         left.appendChild(nameEl);
         left.appendChild(metaEl);
 
+        const rightControls = document.createElement("div");
+        rightControls.style.display = "flex";
+        rightControls.style.flexDirection = "column";
+        rightControls.style.alignItems = "flex-end";
+        rightControls.style.gap = "4px";
+
         const delBtn = document.createElement("button");
         delBtn.className = "btn-primary";
         delBtn.style.padding = "4px 8px";
@@ -833,9 +867,46 @@
           deleteTeam(t.teamName);
         };
 
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "btn-secondary";
+        toggleBtn.textContent = "Details tonen";
+
+        rightControls.appendChild(delBtn);
+        rightControls.appendChild(toggleBtn);
+
         row.appendChild(left);
-        row.appendChild(delBtn);
-        adminTeamsList.appendChild(row);
+        row.appendChild(rightControls);
+
+        const safeKey = encodeURIComponent(t.teamName || "");
+        const cfg = teamConfigsState && teamConfigsState[safeKey];
+
+        const tasksDiv = document.createElement("div");
+        tasksDiv.className = "admin-task-details";
+        tasksDiv.style.display = "none";
+
+        if (!cfg || !cfg.tasks || Object.keys(cfg.tasks).length === 0) {
+          tasksDiv.textContent = "Opdrachten: nog geen configuratie gevonden.";
+        } else {
+          const lines = [];
+          for (const [venueId, taskObj] of Object.entries(cfg.tasks)) {
+            const v = baseVenueById[venueId];
+            const vName = v ? v.name : venueId;
+            const title = taskObj.taskTitle || "Opdracht";
+            lines.push(`${vName}: ${title}`);
+          }
+          tasksDiv.textContent = "Opdrachten: " + lines.join(" · ");
+        }
+
+        toggleBtn.onclick = (e) => {
+          e.stopPropagation();
+          const isHidden = tasksDiv.style.display === "none";
+          tasksDiv.style.display = isHidden ? "block" : "none";
+          toggleBtn.textContent = isHidden ? "Details verbergen" : "Details tonen";
+        };
+
+        wrapper.appendChild(row);
+        wrapper.appendChild(tasksDiv);
+        adminTeamsList.appendChild(wrapper);
       });
     }
 
@@ -888,7 +959,7 @@
       }
     }
 
-    // ====== Firebase: teams volgen ======
+    // ====== Firebase: subscribe ======
     function ensureSubscribeToTeams() {
       if (subscribedTeams) return;
       subscribedTeams = true;
@@ -914,6 +985,26 @@
           showConnectionBanner();
         }
       });
+    }
+
+    function ensureSubscribeToTeamConfigs() {
+      if (subscribedConfigs) return;
+      subscribedConfigs = true;
+      const configsRef = ref(db, "teamConfigs");
+      onValue(
+        configsRef,
+        (snapshot) => {
+          teamConfigsState = snapshot.val() || {};
+          if (isAdmin) {
+            const entries = Object.values(teamsState || {});
+            updateAdminTeamsList(entries);
+          }
+        },
+        (error) => {
+          console.error("Fout bij onValue /teamConfigs", error);
+          showConnectionBanner();
+        }
+      );
     }
 
     function updateTeamsUI() {
