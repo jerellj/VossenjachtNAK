@@ -305,11 +305,38 @@
       text-align: center;
       display: none;
     }
+    .vos-banner {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: rgba(30,64,175,0.6);
+      border: 1px solid rgba(129,140,248,0.9);
+      color: #e0e7ff;
+      text-align: center;
+    }
     .admin-task-details {
       font-size: 0.8rem;
       color: var(--muted);
       margin-top: 4px;
       padding-left: 4px;
+    }
+    .admin-rules {
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: rgba(15,23,42,0.7);
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.4);
+      padding: 8px 10px;
+      margin-top: 4px;
+    }
+    .admin-rules ul {
+      margin: 4px 0 0 16px;
+      padding: 0;
+      list-style: disc;
+    }
+    .admin-rules li {
+      margin-bottom: 2px;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(6px); }
@@ -362,7 +389,7 @@
       </header>
 
       <section class="card" style="margin-top:10px;">
-        <div class="section-label">Teams</div>
+        <div class="section-label">Teams & spel</div>
         <div class="info-row">
           <div class="info-pill">
             <span class="info-label">Jullie team:</span>
@@ -373,6 +400,12 @@
             <span class="info-value" id="otherTeamsShort">laden...</span>
           </div>
         </div>
+
+        <div id="globalGameTimer" class="hint">
+          Spel nog niet gestart.
+        </div>
+        <div id="vosBanner" class="vos-banner" style="display:none;"></div>
+
         <div id="currentLocationHint" class="hint">
           Nog geen locatie gekozen.
         </div>
@@ -397,9 +430,36 @@
       <section id="adminPanel" class="card" style="margin-top:10px; display:none;">
         <div class="section-label">Game master</div>
         <p class="hint">
-          Hier kun je teams verwijderen of alles in één keer resetten, en de opdrachten per team bekijken.
+          Jij bent de vos & spelleider. Hier kun je spelduur instellen, de vos markeren en teams beoordelen.
         </p>
-        <div id="adminTeamsList" class="venue-list"></div>
+
+        <div class="hint" style="margin-top:10px; font-weight:600;">Opdrachten & beoordelingsregels</div>
+        <div id="adminRulesBox" class="admin-rules"></div>
+
+        <div class="hint" style="margin-top:8px; font-weight:600;">Speltimer</div>
+        <div class="input-row" style="margin-top:4px;">
+          <input id="gameDurationInput" type="number" min="5" max="240" step="5" value="60" placeholder="Duur in minuten" />
+          <button id="adminStartGameBtn" class="btn-primary">Start spel</button>
+        </div>
+        <button id="adminStopGameBtn" class="btn-secondary" style="margin-top:6px;">
+          Stop spel
+        </button>
+
+        <div class="hint" style="margin-top:12px; font-weight:600;">Vos gevonden</div>
+        <div class="input-row" style="margin-top:4px;">
+          <select id="vosTeamSelect" style="flex:1; padding:8px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.5); background:#020617; color:var(--text); font-size:0.8rem;">
+            <option value="">Team</option>
+          </select>
+          <select id="vosVenueSelect" style="flex:1; padding:8px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.5); background:#020617; color:var(--text); font-size:0.8rem;">
+            <option value="">Locatie</option>
+          </select>
+        </div>
+        <button id="markVosFoundBtn" class="btn-secondary" style="margin-top:6px;">
+          Markeer vos gevonden
+        </button>
+        <div id="adminVosInfo" class="hint" style="margin-top:6px;"></div>
+
+        <div id="adminTeamsList" class="venue-list" style="margin-top:10px;"></div>
         <button id="adminDeleteAllBtn" class="btn-primary" style="width:100%; margin-top:8px;">
           Verwijder alle teams & data nu
         </button>
@@ -427,7 +487,7 @@
 
     const RESET_TIME_HOUR = 5;
     const RESET_TIME_MINUTE = 55;
-    const ADMIN_CODE = "NAK2025"; // <- hier kun je je eigen game master code invullen
+    const ADMIN_CODE = "NAK2025"; // <- pas deze code aan voor jouw event
 
     // ====== Basisdata: kroegen & opdrachten ======
     const BASE_VENUES = [
@@ -490,10 +550,20 @@
     const currentLocationHintEl = document.getElementById("currentLocationHint");
     const visitedHintEl = document.getElementById("visitedHint");
     const connectionBannerEl = document.getElementById("connectionBanner");
+    const globalGameTimerEl = document.getElementById("globalGameTimer");
+    const vosBannerEl = document.getElementById("vosBanner");
 
     const adminPanel = document.getElementById("adminPanel");
     const adminTeamsList = document.getElementById("adminTeamsList");
     const adminDeleteAllBtn = document.getElementById("adminDeleteAllBtn");
+    const gameDurationInput = document.getElementById("gameDurationInput");
+    const adminStartGameBtn = document.getElementById("adminStartGameBtn");
+    const adminStopGameBtn = document.getElementById("adminStopGameBtn");
+    const vosTeamSelect = document.getElementById("vosTeamSelect");
+    const vosVenueSelect = document.getElementById("vosVenueSelect");
+    const markVosFoundBtn = document.getElementById("markVosFoundBtn");
+    const adminVosInfo = document.getElementById("adminVosInfo");
+    const adminRulesBox = document.getElementById("adminRulesBox");
 
     // ====== State ======
     let timerInterval = null;
@@ -504,15 +574,21 @@
     let teamsState = {};
     let teamConfig = null;         // config voor huidig team
     let teamConfigsState = {};     // ALLE teamConfigs (voor game master)
+    let scoresState = {};          // scores[teamKey][venueId] = {taskPoints, toastPoints, note}
+    let gameStatusMain = null;     // spel-timer status
+    let vosStatus = null;          // vos gevonden status
     let myVisited = {};
 
     let subscribedTeams = false;
     let subscribedConnection = false;
     let subscribedConfigs = false;
+    let subscribedScores = false;
+    let subscribedGameStatus = false;
     let isAdmin = false;
 
     const venueButtons = {};
     const venueTags = {};
+    let globalTimerInterval = null;
 
     // ====== Helpers ======
     function showConnectionBanner() {
@@ -552,6 +628,8 @@
 
         await set(ref(db, "teams"), null);
         await set(ref(db, "teamConfigs"), null);
+        await set(ref(db, "scores"), null);
+        await set(ref(db, "gameStatus"), null);
         await set(resetRef, today);
         console.log("Dagelijkse reset uitgevoerd voor", today);
       } catch (err) {
@@ -560,7 +638,7 @@
       }
     }
 
-    // ====== Timer ======
+    // ====== Timer per kroeg (15 min) ======
     function formatTime(seconds) {
       const m = Math.floor(seconds / 60).toString().padStart(2, "0");
       const s = (seconds % 60).toString().padStart(2, "0");
@@ -655,11 +733,42 @@
       };
     }
 
-    function getOrderedVenueIds() {
-      if (teamConfig && Array.isArray(teamConfig.order) && teamConfig.order.length > 0) {
-        return teamConfig.order;
+    function getOrderedVenueIdsForTeamConfig(cfg) {
+      if (cfg && Array.isArray(cfg.order) && cfg.order.length > 0) {
+        return cfg.order;
       }
       return BASE_VENUES.map(v => v.id);
+    }
+
+    function getOrderedVenueIds() {
+      return getOrderedVenueIdsForTeamConfig(teamConfig);
+    }
+
+    // ====== Score helpers ======
+    function getTeamTotalPoints(safeKey) {
+      const teamScores = (scoresState && scoresState[safeKey]) || {};
+      let total = 0;
+      Object.values(teamScores).forEach(sc => {
+        if (!sc) return;
+        total += (sc.taskPoints || 0) + (sc.toastPoints || 0);
+      });
+      return total;
+    }
+
+    async function updateScoreEntry(safeKey, venueId, newFields) {
+      const currentTeamScores = (scoresState && scoresState[safeKey] && scoresState[safeKey][venueId]) || {};
+      const updated = {
+        taskPoints: currentTeamScores.taskPoints ?? 0,
+        toastPoints: currentTeamScores.toastPoints ?? 0,
+        note: currentTeamScores.note ?? "",
+        ...newFields
+      };
+      try {
+        await set(ref(db, `scores/${safeKey}/${venueId}`), updated);
+      } catch (err) {
+        console.error("Error bij opslaan score", err);
+        showConnectionBanner();
+      }
     }
 
     // ====== UI: kroegenlijst ======
@@ -757,6 +866,7 @@
       renderVenueList();
       ensureSubscribeToTeams();
       ensureSubscribeToConnection();
+      ensureSubscribeToGameStatus();
     }
 
     startBtn.addEventListener("click", () => {
@@ -764,6 +874,35 @@
     });
 
     // ====== Game master / admin ======
+    function renderAdminRules() {
+      if (!adminRulesBox) return;
+      adminRulesBox.innerHTML = "";
+
+      const general = document.createElement("div");
+      general.innerHTML =
+        "<strong>Algemene regels</strong><br>" +
+        "• Teams hebben 15 minuten per kroeg om de opdracht uit te voeren.<br>" +
+        "• Lukt het niet binnen 15 minuten? Iedereen een shotje.<br>" +
+        "• De vos (game master) geeft per opdracht 0–3 punten (0 = niet gedaan, 1 = geprobeerd maar gefaald, 2 = bijna gelukt, 3 = geslaagd).<br>" +
+        "• Per locatie kan +1 punt gegeven worden als er een proost-foto in de groepsapp is gedeeld.<br>" +
+        "• Het notitieveld is optioneel en kan gebruikt worden voor korte opmerkingen.";
+      adminRulesBox.appendChild(general);
+
+      const listTitle = document.createElement("div");
+      listTitle.style.marginTop = "6px";
+      listTitle.style.fontWeight = "600";
+      listTitle.textContent = "Opdrachten in dit spel:";
+      adminRulesBox.appendChild(listTitle);
+
+      const ul = document.createElement("ul");
+      TASK_POOL.forEach(task => {
+        const li = document.createElement("li");
+        li.textContent = `${task.taskTitle}: ${task.taskText}`;
+        ul.appendChild(li);
+      });
+      adminRulesBox.appendChild(ul);
+    }
+
     adminToggleBtn.addEventListener("click", () => {
       const code = prompt("Voer de game master-code in:");
       if (code === null) return;
@@ -781,7 +920,10 @@
       ensureSubscribeToTeams();
       ensureSubscribeToConnection();
       ensureSubscribeToTeamConfigs();
+      ensureSubscribeToScores();
+      ensureSubscribeToGameStatus();
       adminPanel.style.display = "block";
+      renderAdminRules();
     });
 
     async function deleteTeam(teamName) {
@@ -790,6 +932,7 @@
       try {
         await set(ref(db, "teams/" + safeKey), null);
         await set(ref(db, "teamConfigs/" + safeKey), null);
+        await set(ref(db, "scores/" + safeKey), null);
         if (currentTeamName === teamName) {
           localStorage.removeItem("vossenjacht_teamname");
           currentTeamName = null;
@@ -803,10 +946,11 @@
     }
 
     async function deleteAllTeamsAndConfigs() {
-      if (!confirm("Weet je zeker dat je ALLE teams & configuraties wilt verwijderen?")) return;
+      if (!confirm("Weet je zeker dat je ALLE teams, configs en scores wilt verwijderen?")) return;
       try {
         await set(ref(db, "teams"), null);
         await set(ref(db, "teamConfigs"), null);
+        await set(ref(db, "scores"), null);
       } catch (err) {
         console.error("Error bij verwijderen alle teams", err);
         showConnectionBanner();
@@ -815,6 +959,65 @@
 
     adminDeleteAllBtn.addEventListener("click", () => {
       deleteAllTeamsAndConfigs();
+    });
+
+    adminStartGameBtn.addEventListener("click", async () => {
+      const minutes = parseInt(gameDurationInput.value, 10);
+      const durationMin = !isNaN(minutes) && minutes > 0 ? minutes : 60;
+      const durationSec = durationMin * 60;
+      const now = Date.now();
+      const gameMain = {
+        isRunning: true,
+        gameStartedAt: now,
+        gameDurationSec: durationSec,
+        gameEndsAt: now + durationSec * 1000,
+        startedBy: currentTeamName || "Game Master"
+      };
+      try {
+        await set(ref(db, "gameStatus/main"), gameMain);
+      } catch (err) {
+        console.error("Error bij starten spel", err);
+        showConnectionBanner();
+      }
+    });
+
+    adminStopGameBtn.addEventListener("click", async () => {
+      try {
+        await set(ref(db, "gameStatus/main"), {
+          isRunning: false
+        });
+      } catch (err) {
+        console.error("Error bij stoppen spel", err);
+        showConnectionBanner();
+      }
+    });
+
+    markVosFoundBtn.addEventListener("click", async () => {
+      const teamValue = vosTeamSelect.value;
+      const venueId = vosVenueSelect.value;
+      if (!teamValue || !venueId) {
+        alert("Selecteer zowel een team als een locatie.");
+        return;
+      }
+      const safeKey = teamValue;
+      const teamEntry = Object.values(teamsState || {}).find(t => encodeURIComponent(t.teamName || "") === safeKey);
+      const teamName = teamEntry ? teamEntry.teamName : safeKey;
+      const venue = baseVenueById[venueId];
+      const venueName = venue ? venue.name : venueId;
+      const payload = {
+        active: true,
+        foundByTeamKey: safeKey,
+        foundByTeamName: teamName,
+        foundAtVenueId: venueId,
+        foundAtVenueName: venueName,
+        timestamp: Date.now()
+      };
+      try {
+        await set(ref(db, "gameStatus/vos"), payload);
+      } catch (err) {
+        console.error("Error bij markeren vos", err);
+        showConnectionBanner();
+      }
     });
 
     function updateAdminTeamsList(entries) {
@@ -843,11 +1046,14 @@
         nameEl.className = "venue-name";
         nameEl.textContent = t.teamName || "(naamloos)";
 
+        const safeKey = encodeURIComponent(t.teamName || "");
+        const totalPoints = getTeamTotalPoints(safeKey);
+
         const metaEl = document.createElement("span");
         metaEl.className = "venue-meta";
         metaEl.textContent = t.lastVenueName
-          ? `Locatie: ${t.lastVenueName}`
-          : "Geen actieve locatie";
+          ? `Locatie: ${t.lastVenueName} · Totaal punten: ${totalPoints}`
+          : `Geen actieve locatie · Totaal punten: ${totalPoints}`;
 
         left.appendChild(nameEl);
         left.appendChild(metaEl);
@@ -877,35 +1083,164 @@
         row.appendChild(left);
         row.appendChild(rightControls);
 
-        const safeKey = encodeURIComponent(t.teamName || "");
+        // Details: alleen bezochte locaties
+        const detailsContainer = document.createElement("div");
+        detailsContainer.className = "admin-task-details";
+        detailsContainer.style.display = "none";
+
+        const visitedMap = t.visited || {};
+        const visitedIds = Object.keys(visitedMap).filter(id => visitedMap[id]);
+
         const cfg = teamConfigsState && teamConfigsState[safeKey];
 
-        const tasksDiv = document.createElement("div");
-        tasksDiv.className = "admin-task-details";
-        tasksDiv.style.display = "none";
-
-        if (!cfg || !cfg.tasks || Object.keys(cfg.tasks).length === 0) {
-          tasksDiv.textContent = "Opdrachten: nog geen configuratie gevonden.";
+        if (visitedIds.length === 0) {
+          const txt = document.createElement("div");
+          txt.textContent = "Nog geen locaties bezocht.";
+          detailsContainer.appendChild(txt);
         } else {
-          const lines = [];
-          for (const [venueId, taskObj] of Object.entries(cfg.tasks)) {
+          visitedIds.forEach(venueId => {
             const v = baseVenueById[venueId];
-            const vName = v ? v.name : venueId;
-            const title = taskObj.taskTitle || "Opdracht";
-            lines.push(`${vName}: ${title}`);
-          }
-          tasksDiv.textContent = "Opdrachten: " + lines.join(" · ");
+            if (!v) return;
+
+            const hasTask = cfg && cfg.tasks && cfg.tasks[venueId] && cfg.tasks[venueId].hasTask;
+            const taskTitle = hasTask && cfg.tasks[venueId].taskTitle
+              ? cfg.tasks[venueId].taskTitle
+              : "";
+
+            const venueBlock = document.createElement("div");
+            venueBlock.style.display = "flex";
+            venueBlock.style.flexDirection = "column";
+            venueBlock.style.gap = "2px";
+            venueBlock.style.marginTop = "6px";
+            venueBlock.style.paddingTop = "4px";
+            venueBlock.style.borderTop = "1px dashed rgba(148,163,184,0.4)";
+
+            const titleDiv = document.createElement("div");
+            titleDiv.style.fontWeight = "600";
+            titleDiv.textContent = v.name;
+            venueBlock.appendChild(titleDiv);
+
+            const taskNameDiv = document.createElement("div");
+            taskNameDiv.style.fontSize = "0.78rem";
+            taskNameDiv.textContent = taskTitle ? `Opdracht: ${taskTitle}` : "Opdracht: ";
+            venueBlock.appendChild(taskNameDiv);
+
+            const scoreRow = document.createElement("div");
+            scoreRow.style.display = "flex";
+            scoreRow.style.gap = "6px";
+            scoreRow.style.flexWrap = "wrap";
+            scoreRow.style.marginTop = "2px";
+
+            const teamScoresForVenue = (scoresState[safeKey] && scoresState[safeKey][venueId]) || {};
+            const existingTask = teamScoresForVenue.taskPoints != null ? String(teamScoresForVenue.taskPoints) : "";
+            const existingToast = teamScoresForVenue.toastPoints != null ? String(teamScoresForVenue.toastPoints) : "";
+            const existingNote = teamScoresForVenue.note || "";
+
+            if (hasTask) {
+              const taskLabel = document.createElement("span");
+              taskLabel.textContent = "Opdracht punten:";
+              taskLabel.style.fontSize = "0.76rem";
+
+              const taskSelect = document.createElement("select");
+              taskSelect.style.fontSize = "0.76rem";
+              taskSelect.style.borderRadius = "999px";
+              taskSelect.style.border = "1px solid rgba(148,163,184,0.6)";
+              taskSelect.style.background = "#020617";
+              taskSelect.style.color = "#e5e7eb";
+              taskSelect.innerHTML = `
+                <option value="">-</option>
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              `;
+              taskSelect.value = existingTask;
+              taskSelect.onchange = () => {
+                const val = taskSelect.value === "" ? 0 : parseInt(taskSelect.value, 10);
+                updateScoreEntry(safeKey, venueId, { taskPoints: val });
+              };
+
+              const taskWrap = document.createElement("span");
+              taskWrap.style.display = "flex";
+              taskWrap.style.alignItems = "center";
+              taskWrap.style.gap = "4px";
+              taskWrap.appendChild(taskLabel);
+              taskWrap.appendChild(taskSelect);
+              scoreRow.appendChild(taskWrap);
+            }
+
+            const toastLabel = document.createElement("span");
+            toastLabel.textContent = "Proost-foto:";
+            toastLabel.style.fontSize = "0.76rem";
+
+            const toastSelect = document.createElement("select");
+            toastSelect.style.fontSize = "0.76rem";
+            toastSelect.style.borderRadius = "999px";
+            toastSelect.style.border = "1px solid rgba(148,163,184,0.6)";
+            toastSelect.style.background = "#020617";
+            toastSelect.style.color = "#e5e7eb";
+            toastSelect.innerHTML = `
+              <option value="">-</option>
+              <option value="0">0</option>
+              <option value="1">1</option>
+            `;
+            toastSelect.value = existingToast;
+            toastSelect.onchange = () => {
+              const val = toastSelect.value === "" ? 0 : parseInt(toastSelect.value, 10);
+              updateScoreEntry(safeKey, venueId, { toastPoints: val });
+            };
+
+            const toastWrap = document.createElement("span");
+            toastWrap.style.display = "flex";
+            toastWrap.style.alignItems = "center";
+            toastWrap.style.gap = "4px";
+            toastWrap.appendChild(toastLabel);
+            toastWrap.appendChild(toastSelect);
+            scoreRow.appendChild(toastWrap);
+
+            // Optioneel notitieveld
+            const noteLabel = document.createElement("span");
+            noteLabel.textContent = "Notitie:";
+            noteLabel.style.fontSize = "0.76rem";
+
+            const noteInput = document.createElement("input");
+            noteInput.type = "text";
+            noteInput.placeholder = "Optioneel";
+            noteInput.style.fontSize = "0.76rem";
+            noteInput.style.borderRadius = "999px";
+            noteInput.style.border = "1px solid rgba(148,163,184,0.6)";
+            noteInput.style.background = "#020617";
+            noteInput.style.color = "#e5e7eb";
+            noteInput.style.padding = "2px 8px";
+            noteInput.style.minWidth = "120px";
+            noteInput.value = existingNote;
+            noteInput.onchange = () => {
+              const val = noteInput.value || "";
+              updateScoreEntry(safeKey, venueId, { note: val });
+            };
+
+            const noteWrap = document.createElement("span");
+            noteWrap.style.display = "flex";
+            noteWrap.style.alignItems = "center";
+            noteWrap.style.gap = "4px";
+            noteWrap.appendChild(noteLabel);
+            noteWrap.appendChild(noteInput);
+            scoreRow.appendChild(noteWrap);
+
+            venueBlock.appendChild(scoreRow);
+            detailsContainer.appendChild(venueBlock);
+          });
         }
 
         toggleBtn.onclick = (e) => {
           e.stopPropagation();
-          const isHidden = tasksDiv.style.display === "none";
-          tasksDiv.style.display = isHidden ? "block" : "none";
+          const isHidden = detailsContainer.style.display === "none";
+          detailsContainer.style.display = isHidden ? "block" : "none";
           toggleBtn.textContent = isHidden ? "Details verbergen" : "Details tonen";
         };
 
         wrapper.appendChild(row);
-        wrapper.appendChild(tasksDiv);
+        wrapper.appendChild(detailsContainer);
         adminTeamsList.appendChild(wrapper);
       });
     }
@@ -947,6 +1282,7 @@
         renderVenueList();
         ensureSubscribeToTeams();
         ensureSubscribeToConnection();
+        ensureSubscribeToGameStatus();
 
         if (lastVenueId) {
           showVenue(lastVenueId);
@@ -1007,8 +1343,116 @@
       );
     }
 
+    function ensureSubscribeToScores() {
+      if (subscribedScores) return;
+      subscribedScores = true;
+      const scoresRef = ref(db, "scores");
+      onValue(
+        scoresRef,
+        (snapshot) => {
+          scoresState = snapshot.val() || {};
+          if (isAdmin) {
+            const entries = Object.values(teamsState || {});
+            updateAdminTeamsList(entries);
+          }
+        },
+        (error) => {
+          console.error("Fout bij onValue /scores", error);
+          showConnectionBanner();
+        }
+      );
+    }
+
+    function ensureSubscribeToGameStatus() {
+      if (subscribedGameStatus) return;
+      subscribedGameStatus = true;
+      const statusRef = ref(db, "gameStatus");
+      onValue(
+        statusRef,
+        (snapshot) => {
+          const data = snapshot.val() || {};
+          gameStatusMain = data.main || null;
+          vosStatus = data.vos || null;
+          updateGameStatusUI();
+        },
+        (error) => {
+          console.error("Fout bij onValue /gameStatus", error);
+          showConnectionBanner();
+        }
+      );
+    }
+
+    function updateGameStatusUI() {
+      // globale spel-timer
+      if (globalTimerInterval) {
+        clearInterval(globalTimerInterval);
+        globalTimerInterval = null;
+      }
+      if (!gameStatusMain || !gameStatusMain.isRunning) {
+        if (globalGameTimerEl) {
+          globalGameTimerEl.textContent = "Spel nog niet gestart.";
+        }
+      } else {
+        function renderGlobalTimer() {
+          if (!gameStatusMain || !gameStatusMain.isRunning) return;
+          const now = Date.now();
+          let remaining = Math.floor((gameStatusMain.gameEndsAt - now) / 1000);
+          if (remaining < 0) remaining = 0;
+          const m = Math.floor(remaining / 60).toString().padStart(2, "0");
+          const s = (remaining % 60).toString().padStart(2, "0");
+          if (globalGameTimerEl) {
+            globalGameTimerEl.textContent =
+              remaining > 0
+                ? `Resterende speeltijd: ${m}:${s}`
+                : "Spel afgelopen.";
+          }
+        }
+        renderGlobalTimer();
+        globalTimerInterval = setInterval(renderGlobalTimer, 1000);
+      }
+
+      // vos banners
+      if (vosBannerEl) {
+        if (vosStatus && vosStatus.active && currentTeamName && vosStatus.foundByTeamName) {
+          if (currentTeamName === vosStatus.foundByTeamName) {
+            vosBannerEl.style.display = "block";
+            vosBannerEl.textContent = `Jullie hebben de vos gevonden bij ${vosStatus.foundAtVenueName}! 🎉`;
+          } else {
+            vosBannerEl.style.display = "block";
+            vosBannerEl.textContent = `De vos is gevonden door ${vosStatus.foundByTeamName} bij ${vosStatus.foundAtVenueName}. Kom zo snel mogelijk naar deze locatie!`;
+          }
+        } else if (vosStatus && vosStatus.active && !currentTeamName) {
+          vosBannerEl.style.display = "block";
+          vosBannerEl.textContent = `De vos is gevonden bij ${vosStatus.foundAtVenueName}.`;
+        } else {
+          vosBannerEl.style.display = "none";
+        }
+      }
+
+      if (isAdmin && adminVosInfo) {
+        if (vosStatus && vosStatus.active) {
+          const dateStr = new Date(vosStatus.timestamp || Date.now()).toLocaleTimeString();
+          adminVosInfo.textContent = `Vos gevonden door ${vosStatus.foundByTeamName} bij ${vosStatus.foundAtVenueName} om ${dateStr}.`;
+        } else {
+          adminVosInfo.textContent = "Vos nog niet gemarkeerd als gevonden.";
+        }
+      }
+    }
+
     function updateTeamsUI() {
       const entries = Object.values(teamsState || {});
+      // vul vosTeamSelect opties
+      if (vosTeamSelect) {
+        vosTeamSelect.innerHTML = '<option value="">Team</option>';
+        entries.forEach(t => {
+          if (!t.teamName) return;
+          const opt = document.createElement("option");
+          opt.value = encodeURIComponent(t.teamName);
+          opt.textContent = t.teamName;
+          vosTeamSelect.appendChild(opt);
+        });
+      }
+
       if (entries.length === 0) {
         otherTeamsShortEl.textContent = "geen teams";
         otherTeamsDetailEl.textContent = "Nog geen andere teams zichtbaar.";
@@ -1197,7 +1641,7 @@
         note.className = "task-note";
         note.innerHTML = `
           <span class="dot"></span>
-          <span>Regel: haal de opdracht binnen 15 minuten. Lukt het niet? Iedereen een shotje. Bewijs: foto of video voor de organisatie.</span>
+          <span>Regel: haal de opdracht binnen 15 minuten. Lukt het niet? Iedereen een shotje. Bewijs: foto of video in de groepsapp zodat de vos dit kan beoordelen.</span>
         `;
 
         card.appendChild(body);
@@ -1226,8 +1670,21 @@
       updateTeamsUI();
     }
 
+    // ====== Init vos-locatie dropdown ======
+    function initVosVenueSelect() {
+      if (!vosVenueSelect) return;
+      vosVenueSelect.innerHTML = '<option value="">Locatie</option>';
+      BASE_VENUES.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = v.name;
+        vosVenueSelect.appendChild(opt);
+      });
+    }
+
     // ====== Boot ======
     async function boot() {
+      initVosVenueSelect();
       await checkDailyReset();
       await initFromLocalStorage();
     }
