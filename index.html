@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vossenjacht Kroegentocht Den Bosch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #f97316;
+      --accent-soft: rgba(249,115,22,0.15);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --radius: 18px;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+    .app {
+      width: 100%;
+      max-width: 520px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.4);
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+    .title {
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    .card {
+      background: rgba(15,23,42,0.95);
+      border-radius: var(--radius);
+      padding: 16px 16px 14px;
+      border: 1px solid rgba(148,163,184,0.4);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+      margin-top: 14px;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+    .card p {
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .input-row input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: #020617;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .btn-primary {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #f97316, #fb923c);
+      color: #0b1120;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+    .btn-link {
+      border: none;
+      background: none;
+      color: var(--accent);
+      font-size: 0.8rem;
+      padding: 0;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    /* Game screen */
+    .header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .section-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+    }
+    .info-pill {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.3);
+      background: rgba(15,23,42,0.9);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .info-label {
+      color: var(--muted);
+    }
+    .info-value {
+      font-weight: 600;
+    }
+    .venue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .venue-btn {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 0.93rem;
+      transition: background 0.12s ease, transform 0.08s ease, border-color 0.12s ease;
+    }
+    .venue-btn span {
+      display: flex;
+      flex-direction: column;
+    }
+    .venue-name {
+      font-weight: 600;
+    }
+    .venue-meta {
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    .venue-tag {
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.18);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .venue-btn:active {
+      transform: scale(0.97);
+      background: #020617;
+    }
+    .venue-btn.active {
+      border-color: var(--accent);
+      background: rgba(15,23,42,1);
+      box-shadow: 0 0 0 1px rgba(249,115,22,0.3);
+    }
+    .task-card {
+      border-radius: var(--radius);
+      background: var(--card);
+      padding: 14px 14px 12px;
+      border: 1px solid rgba(148,163,184,0.35);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.4);
+      animation: fadeIn 0.15s ease-out;
+    }
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .task-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    .task-timer {
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(239,68,68,0.12);
+      color: #fecaca;
+      border: 1px solid rgba(239,68,68,0.45);
+    }
+    .task-timer.expired {
+      background: rgba(127,29,29,0.4);
+      border-color: rgba(248,113,113,0.8);
+      color: #fee2e2;
+    }
+    .task-venue-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .task-body {
+      font-size: 0.9rem;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .task-note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px dashed rgba(148,163,184,0.6);
+      padding-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+    .no-task-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .no-task-body {
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+    .no-task-rule {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .warning {
+      font-size: 0.8rem;
+      color: #fed7aa;
+      margin-top: 4px;
+    }
+    .conn-banner {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: rgba(127,29,29,0.5);
+      border: 1px solid rgba(248,113,113,0.8);
+      color: #fee2e2;
+      text-align: center;
+      display: none;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <!-- STARTSCREEN -->
+    <section id="startScreen">
+      <div class="pill">
+        <span class="pill-dot"></span>
+        Vossenjacht · Den Bosch
+      </div>
+      <div class="title">Team login</div>
+      <p class="subtitle">
+        Vul jullie teamnaam in om mee te doen aan de kroegentocht.<br>
+        Alle teams zien van elkaar in welke kroeg ze zitten.
+      </p>
+
+      <div class="card">
+        <h2>Teamnaam kiezen</h2>
+        <p>Kies een unieke naam (bijv. “De Dorstige Vossen”). Deze naam wordt gedeeld met alle teams.</p>
+        <div class="input-row">
+          <input id="teamNameInput" type="text" placeholder="Teamnaam" autocomplete="off" />
+          <button id="startBtn" class="btn-primary">Start</button>
+        </div>
+        <div class="hint">
+          Tip: gebruik één telefoon per team. De app onthoudt jullie teamnaam.
+        </div>
+        <div class="hint" style="margin-top:10px;">
+          Game master? 
+          <button id="adminToggleBtn" class="btn-link">Open game master-paneel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAMESCREEN -->
+    <section id="gameScreen" style="display:none;">
+      <header class="header">
+        <div class="pill">
+          <span class="pill-dot"></span>
+          Vossenjacht · Den Bosch
+        </div>
+        <div class="title" style="font-size:1.4rem;">Kroeg & opdracht</div>
+        <p class="subtitle">
+          Kies de kroeg of club waar jullie nu zijn. Je ziet dan of er een opdracht is en de timer start.
+        </p>
+      </header>
+
+      <section class="card" style="margin-top:10px;">
+        <div class="section-label">Teams</div>
+        <div class="info-row">
+          <div class="info-pill">
+            <span class="info-label">Jullie team:</span>
+            <span class="info-value" id="teamNameLabel">–</span>
+          </div>
+          <div class="info-pill" style="flex:1.4;">
+            <span class="info-label">Andere teams:</span>
+            <span class="info-value" id="otherTeamsShort">laden...</span>
+          </div>
+        </div>
+        <div id="currentLocationHint" class="hint">
+          Nog geen locatie gekozen.
+        </div>
+        <div id="visitedHint" class="hint">
+          Nog geen kroegen bezocht.
+        </div>
+        <div id="otherTeamsDetail" class="hint">
+          Andere teams worden geladen...
+        </div>
+        <div id="connectionBanner" class="conn-banner">
+          Let op: verbinding met de server is weg. Locaties van teams worden tijdelijk niet live bijgewerkt.
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:10px;">
+        <div class="section-label">Kies jullie locatie</div>
+        <div id="venueList" class="venue-list"></div>
+        <div id="taskContainer"></div>
+      </section>
+
+      <!-- ADMIN / GAME MASTER PANEL -->
+      <section id="adminPanel" class="card" style="margin-top:10px; display:none;">
+        <div class="section-label">Game master</div>
+        <p class="hint">
+          Hier kun je teams verwijderen of alles in één keer resetten. Gebruik dit alleen als spelleider.
+        </p>
+        <div id="adminTeamsList" class="venue-list"></div>
+        <button id="adminDeleteAllBtn" class="btn-primary" style="width:100%; margin-top:8px;">
+          Verwijder alle teams & data nu
+        </button>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAYVjMgKT0UoI67R8L_v7drOPO5KNFnSNs",
+      authDomain: "vossenjacht-nak.firebaseapp.com",
+      databaseURL: "https://vossenjacht-nak-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "vossenjacht-nak",
+      storageBucket: "vossenjacht-nak.firebasestorage.app",
+      messagingSenderId: "311783204060",
+      appId: "1:311783204060:web:91e03ceef93ba68ae0c019",
+      measurementId: "G-KR8Z8DTJ3Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const RESET_TIME_HOUR = 5;
+    const RESET_TIME_MINUTE = 55;
+    const ADMIN_CODE = "NAK2025"; // pas deze code aan voor je event
+
+    // ====== Basisdata: kroegen & opdrachten ======
+    const BASE_VENUES = [
+      { id: "carrousel",    name: "De Carrousel",          area: "Karrenstraat",   type: "Feestcafé / club" },
+      { id: "zomers",       name: "Zomers & Zomers",       area: "Uilenburg",      type: "Feestcafé" },
+      { id: "plein79",      name: "Plein 79 (P79)",        area: "Centrum",        type: "Bar / podium / club" },
+      { id: "pumpke",       name: "Stadsherberg ’t Pumpke",area: "Parade",         type: "Café" },
+      { id: "banier",       name: "Café Banier",           area: "Korte Putstraat",type: "Bruin café" },
+      { id: "reinders",     name: "Café Reinders",         area: "Uilenburg",      type: "Café" },
+      { id: "pantoffeltje", name: "’t Pantoffeltje",       area: "Korte Putstraat",type: "Café" },
+      { id: "hellomyfriend",name: "Hello My Friend",       area: "Centrum",        type: "Cocktailbar" },
+      { id: "uilenburg",    name: "Café de Uilenburg",     area: "Uilenburg",      type: "Café" },
+      { id: "roels",        name: "Roels",                 area: "Korte Putstraat",type: "Eetcafé / bar" },
+      { id: "jijiken",      name: "Borrelcafé Jij & Ik",   area: "Uilenburg",      type: "Borrelcafé" },
+      { id: "ushiwawa",     name: "Ushiwawa",              area: "Karrenstraat",   type: "Cocktailbar" }
+    ];
+
+    const TASK_POOL = [
+      {
+        taskTitle: "De Vos Danst",
+        taskText: "Binnen 15 minuten moeten jullie minstens 3 onbekenden overtuigen om samen met jullie 10 seconden lang te dansen. Neem het als video op als bewijs."
+      },
+      {
+        taskTitle: "Ruil de Onderzetter",
+        taskText: "Ruil één standaard bierviltje voor iets dat duidelijk meer waarde heeft (geen geld). Maak een foto met het geruilde item en jullie team."
+      },
+      {
+        taskTitle: "Coaster Challenge",
+        taskText: "Bouw een toren van minstens 12 bierviltjes die 3 seconden blijft staan zonder vasthouden. Film het moment dat jullie loslaten tot 3 tellen."
+      },
+      {
+        taskTitle: "De Stiltefilm",
+        taskText: "Speel zonder woorden een bekende film na tot iemand de titel raadt. Neem de pantomime en het moment van raden op."
+      },
+      {
+        taskTitle: "Complimentenregen",
+        taskText: "Geef 5 verschillende onbekenden een oprecht compliment dat eindigt met: ‘Dat wilde ik gewoon even zeggen.’ Leg het vast op video (mag korte compilatie zijn)."
+      },
+      {
+        taskTitle: "Kroegkoor",
+        taskText: "Kies een bekend refrein en zorg dat minstens 5 andere mensen met jullie meezingen. Film het refrein als bewijs."
+      }
+    ];
+
+    const baseVenueById = {};
+    BASE_VENUES.forEach(v => { baseVenueById[v.id] = v; });
+
+    // ====== DOM refs ======
+    const startScreen = document.getElementById("startScreen");
+    const gameScreen = document.getElementById("gameScreen");
+    const teamNameInput = document.getElementById("teamNameInput");
+    const startBtn = document.getElementById("startBtn");
+    const adminToggleBtn = document.getElementById("adminToggleBtn");
+
+    const venueListEl = document.getElementById("venueList");
+    const taskContainerEl = document.getElementById("taskContainer");
+    const teamNameLabel = document.getElementById("teamNameLabel");
+    const otherTeamsShortEl = document.getElementById("otherTeamsShort");
+    const otherTeamsDetailEl = document.getElementById("otherTeamsDetail");
+    const currentLocationHintEl = document.getElementById("currentLocationHint");
+    const visitedHintEl = document.getElementById("visitedHint");
+    const connectionBannerEl = document.getElementById("connectionBanner");
+
+    const adminPanel = document.getElementById("adminPanel");
+    const adminTeamsList = document.getElementById("adminTeamsList");
+    const adminDeleteAllBtn = document.getElementById("adminDeleteAllBtn");
+
+    // ====== State ======
+    let timerInterval = null;
+    let remainingSeconds = 0;
+    let currentTeamName = null;
+    let currentVenueId = null;
+    let teamsState = {};
+    let teamConfig = null; // { order: [venueIds], tasks: { venueId: {hasTask, taskTitle, taskText} } }
+    let myVisited = {};
+    let subscribedTeams = false;
+    let subscribedConnection = false;
+    let isAdmin = false;
+    const venueButtons = {};
+    const venueTags = {};
+
+    // ====== Helpers ======
+    function showConnectionBanner() {
+      if (connectionBannerEl) connectionBannerEl.style.display = "block";
+    }
+    function hideConnectionBanner() {
+      if (connectionBannerEl) connectionBannerEl.style.display = "none";
+    }
+
+    function shuffle(array) {
+      const arr = array.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // ====== Dagelijkse reset rond 05:55 ======
+    async function checkDailyReset() {
+      try {
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const today = now.toISOString().slice(0, 10);
+        const shouldResetTime =
+          (hour > RESET_TIME_HOUR) ||
+          (hour === RESET_TIME_HOUR && minute >= RESET_TIME_MINUTE);
+
+        if (!shouldResetTime) return;
+
+        const resetRef = ref(db, "resets/lastReset");
+        const snap = await get(resetRef);
+        const last = snap.exists() ? snap.val() : null;
+
+        if (last === today) {
+          return; // vandaag al gereset
+        }
+
+        // reset alle teams & configs
+        await set(ref(db, "teams"), null);
+        await set(ref(db, "teamConfigs"), null);
+        await set(resetRef, today);
+        console.log("Dagelijkse reset uitgevoerd voor", today);
+      } catch (err) {
+        console.error("Error bij dagelijkse reset", err);
+        showConnectionBanner();
+      }
+    }
+
+    // ====== Timer ======
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const s = (seconds % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function startTimer() {
+      remainingSeconds = 15 * 60;
+      updateTimerDisplay(false);
+
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        remainingSeconds--;
+        if (remainingSeconds <= 0) {
+          remainingSeconds = 0;
+          clearInterval(timerInterval);
+          timerInterval = null;
+          updateTimerDisplay(true);
+          freeCurrentLocation();
+        } else {
+          updateTimerDisplay(false);
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay(expired) {
+      const timerEl = document.getElementById("taskTimer");
+      if (!timerEl) return;
+      if (expired) {
+        timerEl.classList.add("expired");
+        timerEl.textContent = "Tijd voorbij · Shotje!";
+      } else {
+        timerEl.classList.remove("expired");
+        timerEl.textContent = `${formatTime(remainingSeconds)} · 15 min timer`;
+      }
+    }
+
+    async function freeCurrentLocation() {
+      if (!currentTeamName) return;
+      const safeKey = encodeURIComponent(currentTeamName);
+      const teamRef = ref(db, "teams/" + safeKey);
+      try {
+        await set(teamRef, {
+          teamName: currentTeamName,
+          lastVenueId: null,
+          lastVenueName: "Geen actieve locatie",
+          updatedAt: Date.now(),
+          visited: myVisited
+        });
+      } catch (err) {
+        console.error("Error bij vrijgeven locatie", err);
+        showConnectionBanner();
+      }
+    }
+
+    // ====== Teamconfig per team ======
+    async function loadOrCreateTeamConfig(safeKey) {
+      const configRef = ref(db, "teamConfigs/" + safeKey);
+      const snap = await get(configRef);
+      if (snap.exists()) {
+        teamConfig = snap.val();
+        return;
+      }
+
+      const order = shuffle(BASE_VENUES.map(v => v.id));
+      const taskVenues = order.slice(0, TASK_POOL.length);
+      const shuffledTasks = shuffle(TASK_POOL);
+
+      const tasksMap = {};
+      for (let i = 0; i < taskVenues.length; i++) {
+        const vid = taskVenues[i];
+        const t = shuffledTasks[i];
+        tasksMap[vid] = {
+          hasTask: true,
+          taskTitle: t.taskTitle,
+          taskText: t.taskText
+        };
+      }
+
+      teamConfig = { order, tasks: tasksMap };
+      await set(configRef, teamConfig);
+    }
+
+    function getAssignmentForVenue(venueId) {
+      if (!teamConfig || !teamConfig.tasks) return { hasTask: false };
+      const entry = teamConfig.tasks[venueId];
+      if (!entry) return { hasTask: false };
+      return {
+        hasTask: !!entry.hasTask,
+        taskTitle: entry.taskTitle,
+        taskText: entry.taskText
+      };
+    }
+
+    function getOrderedVenueIds() {
+      if (teamConfig && Array.isArray(teamConfig.order) && teamConfig.order.length > 0) {
+        return teamConfig.order;
+      }
+      return BASE_VENUES.map(v => v.id);
+    }
+
+    // ====== UI opbouw: lijst kroegen ======
+    function renderVenueList() {
+      venueListEl.innerHTML = "";
+      const orderedIds = getOrderedVenueIds();
+      orderedIds.forEach(id => {
+        const v = baseVenueById[id];
+        if (!v) return;
+
+        const btn = document.createElement("button");
+        btn.className = "venue-btn";
+        btn.dataset.venueId = v.id;
+        btn.onclick = () => showVenue(v.id);
+
+        const left = document.createElement("span");
+        const name = document.createElement("span");
+        name.className = "venue-name";
+        name.textContent = v.name;
+
+        const meta = document.createElement("span");
+        meta.className = "venue-meta";
+        meta.textContent = `${v.area} · ${v.type}`;
+
+        left.appendChild(name);
+        left.appendChild(meta);
+
+        const tag = document.createElement("span");
+        tag.className = "venue-tag";
+        tag.textContent = "Vrij";
+
+        btn.appendChild(left);
+        btn.appendChild(tag);
+
+        venueListEl.appendChild(btn);
+
+        venueButtons[v.id] = btn;
+        venueTags[v.id] = tag;
+      });
+
+      updateVenueListUI();
+    }
+
+    // ====== Teamnaam flow ======
+    async function startGame() {
+      const nameRaw = teamNameInput.value.trim();
+      if (!nameRaw) {
+        alert("Vul eerst een teamnaam in.");
+        return;
+      }
+      currentTeamName = nameRaw;
+      const safeKey = encodeURIComponent(currentTeamName);
+
+      try {
+        const teamRef = ref(db, "teams/" + safeKey);
+        const snap = await get(teamRef);
+        if (snap.exists()) {
+          alert("Deze teamnaam is al in gebruik. Kies een andere naam.");
+          currentTeamName = null;
+          return;
+        }
+      } catch (err) {
+        console.error("Error bij controleren teamnaam", err);
+        showConnectionBanner();
+      }
+
+      localStorage.setItem("vossenjacht_teamname", currentTeamName);
+      teamNameLabel.textContent = currentTeamName;
+
+      try {
+        const teamRef = ref(db, "teams/" + safeKey);
+        await set(teamRef, {
+          teamName: currentTeamName,
+          lastVenueId: null,
+          lastVenueName: "Nog geen locatie",
+          updatedAt: Date.now(),
+          visited: {}
+        });
+        myVisited = {};
+      } catch (err) {
+        console.error("Error bij initialiseren team", err);
+        showConnectionBanner();
+      }
+
+      try {
+        await loadOrCreateTeamConfig(safeKey);
+      } catch (err) {
+        console.error("Error bij laden teamconfig", err);
+        showConnectionBanner();
+      }
+
+      startScreen.style.display = "none";
+      gameScreen.style.display = "block";
+
+      renderVenueList();
+      ensureSubscribeToTeams();
+      ensureSubscribeToConnection();
+    }
+
+    startBtn.addEventListener("click", () => {
+      startGame();
+    });
+
+    // ====== Game master / admin ======
+    adminToggleBtn.addEventListener("click", () => {
+      const code = prompt("Voer de game master-code in:");
+      if (code === null) return;
+      if (code !== ADMIN_CODE) {
+        alert("Onjuiste code.");
+        return;
+      }
+      isAdmin = true;
+      alert("Game master-paneel geactiveerd.");
+      startScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      teamNameLabel.textContent = "Game Master";
+
+      renderVenueList();
+      ensureSubscribeToTeams();
+      ensureSubscribeToConnection();
+      adminPanel.style.display = "block";
+    });
+
+    async function deleteTeam(teamName) {
+      if (!confirm(`Weet je zeker dat je team "${teamName}" wilt verwijderen?`)) return;
+      const safeKey = encodeURIComponent(teamName);
+      try {
+        await set(ref(db, "teams/" + safeKey), null);
+        await set(ref(db, "teamConfigs/" + safeKey), null);
+        if (currentTeamName === teamName) {
+          localStorage.removeItem("vossenjacht_teamname");
+          currentTeamName = null;
+          currentVenueId = null;
+          myVisited = {};
+        }
+      } catch (err) {
+        console.error("Error bij verwijderen team", err);
+        showConnectionBanner();
+      }
+    }
+
+    async function deleteAllTeamsAndConfigs() {
+      if (!confirm("Weet je zeker dat je ALLE teams & configuraties wilt verwijderen?")) return;
+      try {
+        await set(ref(db, "teams"), null);
+        await set(ref(db, "teamConfigs"), null);
+      } catch (err) {
+        console.error("Error bij verwijderen alle teams", err);
+        showConnectionBanner();
+      }
+    }
+
+    adminDeleteAllBtn.addEventListener("click", () => {
+      deleteAllTeamsAndConfigs();
+    });
+
+    function updateAdminTeamsList(entries) {
+      if (!isAdmin || !adminTeamsList) return;
+      adminTeamsList.innerHTML = "";
+      if (entries.length === 0) {
+        const info = document.createElement("div");
+        info.className = "hint";
+        info.textContent = "Geen teams in het spel.";
+        adminTeamsList.appendChild(info);
+        return;
+      }
+      entries.forEach(t => {
+        const row = document.createElement("div");
+        row.className = "venue-btn";
+
+        const left = document.createElement("span");
+        const nameEl = document.createElement("span");
+        nameEl.className = "venue-name";
+        nameEl.textContent = t.teamName || "(naamloos)";
+
+        const metaEl = document.createElement("span");
+        metaEl.className = "venue-meta";
+        metaEl.textContent = t.lastVenueName
+          ? `Locatie: ${t.lastVenueName}`
+          : "Geen actieve locatie";
+
+        left.appendChild(nameEl);
+        left.appendChild(metaEl);
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-primary";
+        delBtn.style.padding = "4px 8px";
+        delBtn.textContent = "Verwijder";
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteTeam(t.teamName);
+        };
+
+        row.appendChild(left);
+        row.appendChild(delBtn);
+        adminTeamsList.appendChild(row);
+      });
+    }
+
+    // ====== Init localStorage / refresh-gedrag ======
+    async function initFromLocalStorage() {
+      const stored = localStorage.getItem("vossenjacht_teamname");
+      if (!stored) return;
+
+      teamNameInput.value = stored;
+      const safeKey = encodeURIComponent(stored);
+      try {
+        const teamRef = ref(db, "teams/" + safeKey);
+        const snap = await get(teamRef);
+        if (!snap.exists()) {
+          return;
+        }
+        const data = snap.val() || {};
+        const lastVenueName = data.lastVenueName || "onbekend";
+        const lastVenueId = data.lastVenueId || null;
+        myVisited = data.visited || {};
+
+        const keep = confirm(
+          `We found your team "${stored}" in the game.\nLast location: ${lastVenueName}.\n\nOK = continue as this team\nCancel = reset and choose a different name.`
+        );
+        if (!keep) {
+          localStorage.removeItem("vossenjacht_teamname");
+          return;
+        }
+
+        currentTeamName = stored;
+        teamNameLabel.textContent = currentTeamName;
+
+        await loadOrCreateTeamConfig(safeKey);
+
+        startScreen.style.display = "none";
+        gameScreen.style.display = "block";
+
+        renderVenueList();
+        ensureSubscribeToTeams();
+        ensureSubscribeToConnection();
+
+        if (lastVenueId) {
+          showVenue(lastVenueId);
+        } else {
+          updateVenueListUI();
+        }
+      } catch (err) {
+        console.error("Error bij ophalen bestaand team", err);
+        showConnectionBanner();
+      }
+    }
+
+    // ====== Firebase: teams volgen ======
+    function ensureSubscribeToTeams() {
+      if (subscribedTeams) return;
+      subscribedTeams = true;
+      const teamsRef = ref(db, "teams");
+      onValue(teamsRef, (snapshot) => {
+        teamsState = snapshot.val() || {};
+        updateTeamsUI();
+      }, (error) => {
+        console.error("Fout bij onValue /teams", error);
+        showConnectionBanner();
+      });
+    }
+
+    function ensureSubscribeToConnection() {
+      if (subscribedConnection) return;
+      subscribedConnection = true;
+      const connRef = ref(db, ".info/connected");
+      onValue(connRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val === true) {
+          hideConnectionBanner();
+        } else {
+          showConnectionBanner();
+        }
+      });
+    }
+
+    function updateTeamsUI() {
+      const entries = Object.values(teamsState || {});
+      if (entries.length === 0) {
+        otherTeamsShortEl.textContent = "geen teams";
+        otherTeamsDetailEl.textContent = "Nog geen andere teams zichtbaar.";
+        currentLocationHintEl.textContent = "Nog geen locatie gekozen.";
+        visitedHintEl.textContent = "Nog geen kroegen bezocht.";
+        updateVenueListUI();
+        if (isAdmin) updateAdminTeamsList(entries);
+        return;
+      }
+
+      const byVenue = {};
+      let myVenueIdLocal = null;
+      let myVisitedLocal = myVisited;
+
+      for (const t of entries) {
+        if (t.lastVenueId) {
+          if (!byVenue[t.lastVenueId]) byVenue[t.lastVenueId] = [];
+          byVenue[t.lastVenueId].push(t.teamName);
+        }
+        if (t.teamName === currentTeamName) {
+          myVenueIdLocal = t.lastVenueId || null;
+          myVisitedLocal = t.visited || myVisitedLocal || {};
+        }
+      }
+
+      currentVenueId = myVenueIdLocal;
+      myVisited = myVisitedLocal;
+
+      const otherTeams = entries.filter(t => t.teamName !== currentTeamName);
+      if (otherTeams.length === 0) {
+        otherTeamsShortEl.textContent = "geen andere teams";
+      } else {
+        otherTeamsShortEl.textContent = `${otherTeams.length} team(s)`;
+      }
+
+      const lines = [];
+      for (const [venueId, teams] of Object.entries(byVenue)) {
+        const venue = baseVenueById[venueId];
+        const venueName = venue ? venue.name : venueId;
+        const others = teams.filter(n => n !== currentTeamName);
+        if (others.length === 0) continue;
+        lines.push(`${venueName}: ${others.join(", ")}`);
+      }
+      if (lines.length === 0) {
+        otherTeamsDetailEl.textContent = "Geen andere teams op jullie route. Vrij spel!";
+      } else {
+        otherTeamsDetailEl.textContent = "Andere teams nu op: " + lines.join(" · ");
+      }
+
+      if (myVenueIdLocal && baseVenueById[myVenueIdLocal]) {
+        currentLocationHintEl.textContent = `Jullie zijn nu bij: ${baseVenueById[myVenueIdLocal].name}`;
+      } else {
+        currentLocationHintEl.textContent = "Nog geen locatie gekozen.";
+      }
+
+      const visitedIds = Object.keys(myVisited || {}).filter(id => myVisited[id]);
+      if (visitedIds.length === 0) {
+        visitedHintEl.textContent = "Nog geen kroegen bezocht.";
+      } else {
+        const names = visitedIds
+          .map(id => baseVenueById[id]?.name || id)
+          .join(", ");
+        visitedHintEl.textContent = `Reeds bezocht: ${names}.`;
+      }
+
+      updateVenueListUI();
+      if (isAdmin) updateAdminTeamsList(entries);
+    }
+
+    // ====== Kroegenlijst UI ======
+    function updateVenueListUI() {
+      if (Object.keys(venueButtons).length === 0) return;
+
+      const entries = Object.values(teamsState || {});
+      const occupancy = {};
+      let myVenueIdLocal = currentVenueId;
+
+      for (const t of entries) {
+        if (t.lastVenueId) {
+          if (!occupancy[t.lastVenueId]) occupancy[t.lastVenueId] = [];
+          occupancy[t.lastVenueId].push(t.teamName);
+        }
+        if (t.teamName === currentTeamName) {
+          myVenueIdLocal = t.lastVenueId || null;
+        }
+      }
+      currentVenueId = myVenueIdLocal;
+
+      const orderedIds = getOrderedVenueIds();
+      orderedIds.forEach(vid => {
+        const btn = venueButtons[vid];
+        const tag = venueTags[vid];
+        if (!btn || !tag) return;
+        const teamsHere = occupancy[vid] || [];
+        const othersHere = teamsHere.filter(n => n !== currentTeamName);
+        const visited = !!(myVisited && myVisited[vid]);
+
+        let text;
+        if (teamsHere.length === 0) {
+          text = visited ? "Bezocht" : "Vrij";
+        } else if (othersHere.length === 0 && teamsHere.length === 1) {
+          text = visited ? "Alleen jullie · bezocht" : "Alleen jullie";
+        } else {
+          const displayNames =
+            othersHere.length > 2 ? `${othersHere.length} team(s)` : othersHere.join(", ");
+          text = visited ? `Bezet: ${displayNames} · bezocht` : `Bezet: ${displayNames}`;
+        }
+        tag.textContent = text;
+
+        if (myVenueIdLocal && vid === myVenueIdLocal) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+    }
+
+    // ====== Locatie kiezen ======
+    async function showVenue(id) {
+      const venue = baseVenueById[id];
+      if (!venue || !currentTeamName) return;
+
+      const assignment = getAssignmentForVenue(id);
+      const entries = Object.values(teamsState || {});
+      const conflictTeams = entries.filter(
+        t => t.teamName !== currentTeamName && t.lastVenueId === id
+      );
+      if (conflictTeams.length > 0) {
+        const names = conflictTeams.map(t => t.teamName).join(", ");
+        alert(`Op deze locatie zitten al: ${names}. Kies een andere kroeg zodat teams zich verspreiden.`);
+        return;
+      }
+
+      const safeKey = encodeURIComponent(currentTeamName);
+      const teamRef = ref(db, "teams/" + safeKey);
+
+      myVisited = myVisited || {};
+      myVisited[id] = true;
+      currentVenueId = id;
+
+      try {
+        await set(teamRef, {
+          teamName: currentTeamName,
+          lastVenueId: venue.id,
+          lastVenueName: venue.name,
+          updatedAt: Date.now(),
+          visited: myVisited
+        });
+      } catch (err) {
+        console.error("Error bij schrijven teamlocatie", err);
+        showConnectionBanner();
+      }
+
+      taskContainerEl.innerHTML = "";
+      const card = document.createElement("div");
+      card.className = "task-card";
+
+      const header = document.createElement("div");
+      header.className = "task-header";
+
+      const title = document.createElement("div");
+      const hasTask = assignment.hasTask;
+      title.className = hasTask ? "task-title" : "no-task-title";
+      title.textContent = hasTask ? assignment.taskTitle : "Geen opdracht op deze locatie";
+
+      const timer = document.createElement("div");
+      timer.className = "task-timer";
+      timer.id = "taskTimer";
+
+      header.appendChild(title);
+      header.appendChild(timer);
+
+      const venueLabel = document.createElement("div");
+      venueLabel.className = "task-venue-label";
+      venueLabel.textContent = `Locatie: ${venue.name}`;
+
+      card.appendChild(header);
+      card.appendChild(venueLabel);
+
+      if (hasTask) {
+        const body = document.createElement("div");
+        body.className = "task-body";
+        body.textContent = assignment.taskText;
+
+        const note = document.createElement("div");
+        note.className = "task-note";
+        note.innerHTML = `
+          <span class="dot"></span>
+          <span>Regel: haal de opdracht binnen 15 minuten. Lukt het niet? Iedereen een shotje. Bewijs: foto of video voor de organisatie.</span>
+        `;
+
+        card.appendChild(body);
+        card.appendChild(note);
+      } else {
+        const body = document.createElement("div");
+        body.className = "no-task-body";
+        body.textContent = "Jullie hebben deze kroeg gevonden, maar hier is geen vossenjacht-opdracht.";
+
+        const rule = document.createElement("div");
+        rule.className = "no-task-rule";
+        rule.textContent = "Regel: alle teamleden moeten hier minimaal één drankje bestellen (mag ook alcoholvrij). Gebruik de timer om na 15 minuten weer door te gaan.";
+        const warn = document.createElement("div");
+        warn.className = "warning";
+        warn.textContent = "Tip: na 15 minuten wordt deze plek automatisch weer vrijgegeven en kun je beter door naar een andere kroeg.";
+
+        card.appendChild(body);
+        card.appendChild(rule);
+        card.appendChild(warn);
+      }
+
+      taskContainerEl.appendChild(card);
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      startTimer();
+      updateTeamsUI();
+    }
+
+    // ====== Boot ======
+    async function boot() {
+      await checkDailyReset();
+      await initFromLocalStorage();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
